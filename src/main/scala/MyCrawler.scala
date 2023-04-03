@@ -1,57 +1,93 @@
+import net.ruippeixotog.scalascraper.browser.JsoupBrowser
+import net.ruippeixotog.scalascraper.model.Document
 import utils.Result._
-import org.jsoup.Jsoup
-import org.jsoup.nodes.Document
-import collection.JavaConverters._
-import scala.concurrent.{Await, ExecutionContext, Future}
+import utils.domainscraper.DomainFilter
+
+import java.io.{BufferedWriter, File, FileWriter}
+import scala.annotation.tailrec
 import scala.concurrent.duration._
+import scala.concurrent.{Await, ExecutionContext, ExecutionContextExecutor, Future}
 import scala.language.postfixOps
 
-object MyCrawler {
 
-  implicit val ec = ExecutionContext.global
+
+sealed class MyCrawler(getDocument: Url => Document) {
+
+  implicit val ec: ExecutionContextExecutor = ExecutionContext.global
   /*
   Worker gets bunch of URLs
    */
 
-  def crawl(seedUrls: Seq[Url], maxRecLvl: Int = 2, dryRun: Boolean = false): (Set[Url], Seq[Result]) = {
-    def crawlRec(toCrawl: Set[Url], maxRecLvl: Int, visited: Set[Url], results: Seq[Result]): (Set[Url], Seq[Result]) = {
-      if(maxRecLvl == 0) (visited, results)
-      else {
-        val grouped = toCrawl.toSeq.grouped(10).toSeq.zipWithIndex
-        val futures = grouped.map(i => crawlChunk(i._1, i._2.toString, grouped.size))
-        val futureResult: Future[Seq[Result]] = Future.sequence(futures).map(_.flatten)
+  // Step - each step is running crawl in chunks asynchronously, saving result in main thread
+  val stepMaxSize = 100
+  val chunkSize = 10 // one worker load
 
-        val crawled: Seq[Result] = Await.result(futureResult, 5 minutes)
+  def crawlStep(toCrawl: Set[Url]): Seq[Result] = {
+//    println(s"\n\n\nCrawled in this step: ${toCrawl.size}")
+//    toCrawl.foreach(println)
+
+    val grouped = toCrawl.toSeq.grouped(chunkSize).toSeq.zipWithIndex
+    val futures = grouped.map(i => crawlChunk(i._1, i._2.toString, grouped.size))
+    val futureResult: Future[Seq[Result]] = Future.sequence(futures).map(_.flatten)
+
+    val results: Seq[Result] = Await.result(futureResult, 5 minutes)
+
+    println("Writing....")
+
+    val writer = new BufferedWriter(new FileWriter(new File("C:\\Users\\peter.maklary\\Documents\\PARA-Work\\Projects\\WebScraperBC\\data\\fileDb.txt"), true))
+
+    results.foreach(r => writer.write(r.getStringToSave() + "\n"))
+    writer.close()
+    println("Finished Writing")
+
+    //Save step resolt to the repo //todo save result to repo
+
+    results
+  }
+
+  @tailrec
+  final def crawlRec(toCrawl: Set[Url], maxSteps: Int, visited: Set[Url], results: Seq[Result]): (Set[Url], Seq[Result]) = {
+    val (crawlInThisStep, restOfToCrawl) = toCrawl.splitAt(stepMaxSize)
+    println(s"Crawl in step: ${crawlInThisStep.size} , Remaining: ${restOfToCrawl.size}")
+
+    if (maxSteps == 0 || crawlInThisStep.isEmpty) (visited, results)
+    else {
+
+      val crawled = crawlStep(crawlInThisStep)
+      val newVisited = visited ++ crawlInThisStep
+      val nextToCrawl = restOfToCrawl ++ getLinksOnPage(crawled).toSet -- newVisited
 
 
-        val newVisited = visited ++ toCrawl
-        val nextToCrawl = getLinksOnPage(crawled).toSet -- newVisited
-
-        println(s"\n\n\nCrawled in next step: ${nextToCrawl.size}")
-//        nextToCrawl.foreach(println)
-
-        crawlRec(nextToCrawl, maxRecLvl - 1, newVisited, results ++ crawled)
-      }
+      crawlRec(nextToCrawl, maxSteps - 1, newVisited, results ++ crawled)
     }
+  }
 
-    crawlRec(seedUrls.toSet, maxRecLvl, Set.empty, Seq.empty)
+  def crawlMainJob(seedUrls: Seq[Url], maxSteps: Int = 2, dryRun: Boolean = false): (Set[Url], Seq[Result]) = {
+
+    crawlRec(seedUrls.toSet, maxSteps, Set.empty, Seq.empty)
   }
 
 
   private def crawlChunk(toCrawl: Seq[Url], chunkId: String, numOfChunks: Int, dryRun: Boolean = false): Future[Seq[Result]] = Future{
     val allCount = toCrawl.size
     toCrawl.zipWithIndex.map{case(url, index) => {
-      println(s"Chunk[$chunkId/$numOfChunks]: $index out of $allCount --> $url")
-      crawlUrl(url, dryRun)
+//      println(s"Chunk[$chunkId/$numOfChunks]: $index out of $allCount --> $url")
+      crawlUrl(url)
     }}
   }
 
-  private def crawlUrl(url: String, dryRun: Boolean = false): Result = {
-    if(dryRun) Failed(url, url, "Dry run")
-    else try {
-      val doc: Document = Jsoup.connect(url).get()
-      val links = doc.select("a[href]").iterator.asScala.toList.map(_.attr("abs:href"))
-      Crawled(url, url, links, PageContent())
+  private def crawlUrl(url: String): Result = {
+    try {
+      //todo filter links to point only to articles
+
+      val browser = JsoupBrowser()
+      //todo add browser and other singletons to crawlerContext
+
+      val parser = DomainFilter.getDomainScraper(url).getOrElse(throw new RuntimeException(s"Unknown domain for url: $url"))
+      val (cont, urls) = parser.parseDocument(browser.get(url))
+      val supportedUrls = urls.filter(DomainFilter.isUrlInSupportedDomains)
+
+      Crawled(url, url, supportedUrls, cont)
     } catch {
       case e: Exception =>
         Failed(url, url, e.getMessage)
