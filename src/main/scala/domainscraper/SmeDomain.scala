@@ -1,4 +1,5 @@
-package utils.domainscraper
+package domainscraper
+
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.scala.DefaultScalaModule
 import net.ruippeixotog.scalascraper.dsl.DSL.Extract._

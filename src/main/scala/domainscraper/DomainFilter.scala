@@ -1,4 +1,4 @@
-package utils.domainscraper
+package domainscraper
 
 import utils.Result.Url
 

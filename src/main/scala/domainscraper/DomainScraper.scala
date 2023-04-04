@@ -1,4 +1,5 @@
-package utils.domainscraper
+package domainscraper
+
 import net.ruippeixotog.scalascraper.model.Document
 import utils.Result.{PageContent, Url}
 
