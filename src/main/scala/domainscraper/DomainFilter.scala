@@ -1,6 +1,6 @@
 package domainscraper
 
-import utils.Result.Url
+import utils.CustomTypes.Url
 
 object DomainFilter {
 

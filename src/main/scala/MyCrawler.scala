@@ -2,6 +2,7 @@ import domainscraper.DomainFilter
 import logger.{LogContext, LogLevel}
 import net.ruippeixotog.scalascraper.browser.JsoupBrowser
 import utils.CrawlerContext
+import utils.CustomTypes.Url
 import utils.Result._
 
 import java.io.{BufferedWriter, File, FileWriter}

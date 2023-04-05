@@ -9,7 +9,8 @@ import logger.{ConsolePrintLogger, LogLevel}
 import net.ruippeixotog.scalascraper.browser.JsoupBrowser
 import net.ruippeixotog.scalascraper.dsl.DSL.deepFunctorOps
 import net.ruippeixotog.scalascraper.scraper.ContentExtractors.elementList
-import utils.Result.{Crawled, Failed, Result, Url}
+import utils.CustomTypes._
+import utils.Result._
 
 
 object Main extends App{

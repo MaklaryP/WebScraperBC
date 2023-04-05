@@ -1,7 +1,8 @@
 package domainscraper
 
 import net.ruippeixotog.scalascraper.model.Document
-import utils.Result.{PageContent, Url}
+import utils.CustomTypes.Url
+import utils.PageContent
 
 
 trait DomainScraper {

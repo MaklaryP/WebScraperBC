@@ -5,7 +5,8 @@ import com.fasterxml.jackson.module.scala.DefaultScalaModule
 import net.ruippeixotog.scalascraper.dsl.DSL.Extract._
 import net.ruippeixotog.scalascraper.dsl.DSL._
 import net.ruippeixotog.scalascraper.model.Document
-import utils.Result.{PageContent, Url}
+import utils.CustomTypes.Url
+import utils.PageContent
 
 import scala.util.Try
 
@@ -38,9 +39,8 @@ object SmeDomain extends DomainScraper {
     val dateModified = getStringField(parsedMap, "datePublished")
 
 
-    val cont = PageContent.getFromOptions(
-      title.flatten, authors.getOrElse(Seq.empty), publishDate, dateModified,
-      None, Seq.empty, Seq.empty, Seq.empty
+    val cont = PageContent.getEmpty.copy(
+      title.flatten, authors.getOrElse(Seq.empty), publishDate, dateModified
     )
 
     val urlsOpts = doc >?> elementList("""a[href^="https"]""") >?> attr("href")("a")
