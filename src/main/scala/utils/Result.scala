@@ -10,6 +10,8 @@ object Result {
 
   trait Result {
     def getStringToSave: String
+
+    def url: Url
   }
 
   case class Crawled(pageId: String, url: Url, linksOnPage: Seq[Url], pageContent: PageContent) extends Result {

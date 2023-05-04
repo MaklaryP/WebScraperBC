@@ -1,11 +1,14 @@
 import domainscraper.DomainFilter
 import logger.{LogContext, LogLevel}
 import net.ruippeixotog.scalascraper.browser.JsoupBrowser
+import urlmanager.{UrlManager, VisitRecord, VisitState}
+import urlmanager.VisitState.VisitState
 import utils.CrawlerContext
 import utils.CustomTypes.Url
 import utils.Result._
 
 import java.io.{BufferedWriter, File, FileWriter}
+import java.time.LocalDateTime
 import scala.annotation.tailrec
 import scala.concurrent.duration._
 import scala.concurrent.{Await, ExecutionContext, ExecutionContextExecutor, Future}
@@ -24,11 +27,11 @@ sealed class MyCrawler(crawlerCtx: CrawlerContext) {
   val stepMaxSize = 1000
   val chunkSize = 50 // one worker load
 
-  def crawlStep(toCrawl: Set[Url]): Seq[Result] = {
+  def crawlStep(toCrawl: Iterable[Url]): Seq[Result] = {
 //    println(s"\n\n\nCrawled in this step: ${toCrawl.size}")
 //    toCrawl.foreach(println)
 
-    val grouped = toCrawl.toSeq.grouped(chunkSize).toSeq.zipWithIndex
+    val grouped = toCrawl.grouped(chunkSize).toSeq.zipWithIndex
     val futures = grouped.map(i => crawlChunk(i._1, i._2.toString, grouped.size))
     val futureResult: Future[Seq[Result]] = Future.sequence(futures).map(_.flatten)
 
@@ -48,30 +51,40 @@ sealed class MyCrawler(crawlerCtx: CrawlerContext) {
   }
 
   @tailrec
-  final def crawlRec(toCrawl: Set[Url], maxSteps: Int, visited: Set[Url], logCtx: LogContext, results: Seq[Result]): (Set[Url], Seq[Result]) = {
-    val (crawlInThisStep, restOfToCrawl) = toCrawl.splitAt(stepMaxSize)
+  final def crawlRec(qu: UrlManager, maxSteps: Int, logCtx: LogContext, results: Seq[Result]): Seq[Result] = {
+    val crawlInThisStep = qu.toCrawlUrls(stepMaxSize)
 //    println(s"Crawl in step: ${crawlInThisStep.size} , Remaining: ${restOfToCrawl.size}")
-    val newLogCtx = crawlerCtx.logger.logWithContext(s"Crawl in step: ${crawlInThisStep.size} , Remaining: ${restOfToCrawl.size}", logCtx, LogLevel.INFO)
+    val newLogCtx = crawlerCtx.logger.logWithContext(s"Crawl in step: ${crawlInThisStep.size} , Remaining: ${qu.size - crawlInThisStep.size}", logCtx, LogLevel.INFO)
 
-    if (maxSteps == 0 || crawlInThisStep.isEmpty) (visited, results)
+    if (maxSteps == 0 || crawlInThisStep.isEmpty) results
     else {
 
-      val crawled = crawlStep(crawlInThisStep)
-      val newVisited = visited ++ crawlInThisStep
-      val nextToCrawl = restOfToCrawl ++ getLinksOnPage(crawled).toSet -- newVisited
+      val stepResult: Seq[Result] = crawlStep(crawlInThisStep)
+      val urlsFound: Iterable[Url] = getLinksOnPage(stepResult)
 
+      def mapResToVisState(res: Result): VisitState = res match {
+        case Crawled(_,_,_,_) =>  VisitState.Success
+        case _ => VisitState.Fail
+      }
 
-      crawlRec(nextToCrawl, maxSteps - 1, newVisited, newLogCtx, results ++ crawled)
+      val now = Some(LocalDateTime.now())
+      val crawledVisited = stepResult.map(result =>
+        VisitRecord(result.url, now, mapResToVisState(result))
+      )
+
+      val toUpsert: Seq[VisitRecord] = crawledVisited ++ urlsFound.map(VisitRecord.unvisited)
+      val newQu = qu.upsert(toUpsert)
+
+      crawlRec(newQu, maxSteps - 1, newLogCtx, results ++ stepResult)
     }
   }
 
-  def crawlMainJob(seedUrls: Seq[Url], maxSteps: Int = 2, dryRun: Boolean = false): (Set[Url], Seq[Result]) = {
-
-    crawlRec(seedUrls.toSet, maxSteps, Set.empty, LogContext(), Seq.empty)
+  def crawlMainJob(seedUrls: Seq[Url], maxSteps: Int = 2): Seq[Result] = {
+    crawlRec(crawlerCtx.urlQueue.upsert(seedUrls.map(VisitRecord.unvisited)), maxSteps, LogContext(), Seq.empty)
   }
 
 
-  private def crawlChunk(toCrawl: Seq[Url], chunkId: String, numOfChunks: Int, dryRun: Boolean = false): Future[Seq[Result]] = Future{
+  private def crawlChunk(toCrawl: Iterable[Url], chunkId: String, numOfChunks: Int, dryRun: Boolean = false): Future[Iterable[Result]] = Future{
     val allCount = toCrawl.size
     toCrawl.zipWithIndex.map{case(url, index) => {
 //      println(s"Chunk[$chunkId/$numOfChunks]: $index out of $allCount --> $url")
