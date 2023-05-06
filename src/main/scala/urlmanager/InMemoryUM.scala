@@ -1,16 +1,16 @@
 package urlmanager
 
-import urlmanager.InMemoryUM.removeCrawled
+import urlmanager.InMemoryUM.removeDuplicates
 import utils.Url.Url
 import utils.UrlVisitRecord
 
-class InMemoryUM private(private val q: Seq[Url], private val crawled: Set[Url]) extends UrlManager {
+class InMemoryUM private (private val q: Seq[Url], private val crawled: Set[Url]) extends UrlManager {
 
   def this() = this(Seq.empty, Set.empty)
 
   override def upsert(toUpsert: Seq[Url]): UrlManager = {
     //todo remove also dupl with q - first write test that will chatch it
-    new InMemoryUM(q ++ removeCrawled(toUpsert, crawled), crawled)
+    new InMemoryUM(q ++ removeDuplicates(toUpsert, crawled), crawled)
   }
 
   override def getBatch(batchSize: Int): Seq[Url] = {
@@ -19,7 +19,7 @@ class InMemoryUM private(private val q: Seq[Url], private val crawled: Set[Url])
 
   override def markAsCrawled(toMark: Seq[UrlVisitRecord]): UrlManager = {
     val newCrawled = crawled ++ toMark.map(_.url).toSet
-    new InMemoryUM(removeCrawled(q, newCrawled), newCrawled)
+    new InMemoryUM(removeDuplicates(q, newCrawled), newCrawled)
   }
 
   override def sizeToCrawl: Long = q.size
@@ -32,9 +32,13 @@ object InMemoryUM{
   private type Q = Seq[Url]
   private type Crawled = Set[Url]
 
-  private def removeCrawled(q: Q, crawled: Crawled): Q = {
+  private def removeDuplicates(q: Q, crawled: Crawled): Q = {
     val n = q.toSet -- crawled
     n.toSeq
+  }
+
+  def create(toVisit: Q, crawled: Crawled): InMemoryUM = {
+    new InMemoryUM(removeDuplicates(toVisit.toSet.toSeq, crawled), crawled)
   }
 
 }
