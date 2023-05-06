@@ -14,3 +14,4 @@ libraryDependencies += "net.ruippeixotog" %% "scala-scraper" % "3.0.0"
 libraryDependencies += "com.fasterxml.jackson.core" % "jackson-databind" % "2.13.0"
 libraryDependencies += "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.13.0"
 
+libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.9" % Test
