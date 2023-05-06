@@ -15,3 +15,5 @@ libraryDependencies += "com.fasterxml.jackson.core" % "jackson-databind" % "2.13
 libraryDependencies += "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.13.0"
 
 libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.9" % Test
+
+libraryDependencies += "org.apache.commons" % "commons-csv" % "1.10.0"

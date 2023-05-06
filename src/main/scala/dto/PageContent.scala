@@ -4,15 +4,15 @@ import utils.CustomTypes._
 import Url.Url
 
 case class PageContent(title: Option[String], authors: Seq[String],
+                       introSection: Option[String], articleText: Option[String],
                        publishDate: Option[String], lastUpdatedDate: Option[String],
-                       articleText: Option[String], tags: Seq[Tag], categories: Seq[Category],
-                       relatedArticles: Seq[Url], sourceArticles: Seq[Url])
+                       childArticles: Seq[Url])
 
 object PageContent {
   def getEmpty: PageContent = {
     PageContent(title = None, authors = Seq.empty,
       publishDate = None, lastUpdatedDate = None,
-      articleText = None, tags = Seq.empty, categories = Seq.empty,
-      relatedArticles = Seq.empty, sourceArticles = Seq.empty)
+      articleText = None, introSection = None,
+      childArticles = Seq.empty)
   }
 }

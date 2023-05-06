@@ -10,7 +10,7 @@ import dto.Url.Url
 import scala.util.Try
 
 object SmeDomain extends DomainScraper {
-  override def parseDocument(doc: Document): (PageContent, Seq[Url]) = {
+  override def parseDocument(doc: Document): PageContent = {
 
     val metadataElement = doc >?> elementList("""script[type="application/ld+json"]""")
 
@@ -46,7 +46,7 @@ object SmeDomain extends DomainScraper {
 
     val urls = urlsOpts.map(_.filter(_.isDefined).map(_.get)).getOrElse(Seq.empty)
 
-    cont -> urls
+    cont.copy(childArticles = urls)
   }
 
   override def isUrlInDomain(url: Url): Boolean = {

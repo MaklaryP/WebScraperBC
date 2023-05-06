@@ -14,8 +14,8 @@ object Main extends App{
 
   val browser = JsoupBrowser()
 
-  //    val pathStr = "C:\\Users\\peter.maklary\\Documents\\PARA-Work\\Projects\\WebScraperBC\\data\\fileDb.txt"
-  val pathStr = "C:\\Users\\peter\\Documents\\AAAA-PARA-PPC\\Projects\\Bakalarka\\data\\fileDb.txt"
+  //    val pathStr = "C:\\Users\\peter.maklary\\Documents\\PARA-Work\\Projects\\WebScraperBC\\data\\fileDb.csv"
+  val pathStr = "C:\\Users\\peter\\Documents\\AAAA-PARA-PPC\\Projects\\Bakalarka\\data\\fileDb.csv"
 
   val crawlerCtx = CrawlerContext(
     (url: Url) => browser.get(url),

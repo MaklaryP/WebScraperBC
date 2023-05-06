@@ -85,7 +85,8 @@ sealed class MyCrawler(crawlerCtx: CrawlerContext) {
       //todo add browser and other singletons to crawlerContext
 
       val parser = DomainFilter.getDomainScraper(url).getOrElse(throw new RuntimeException(s"Unknown domain for url: $url"))
-      val (cont, urls) = parser.parseDocument(browser.get(url)) //todo change how we are visiting and geting report of it
+      val cont = parser.parseDocument(browser.get(url)) //todo change how we are visiting and geting report of it
+      val urls = cont.childArticles
       val visitRecord = dto.UrlVisitRecord(url, LocalDateTime.now())
 
       val supportedUrls = urls.filter(DomainFilter.isUrlInSupportedDomains)

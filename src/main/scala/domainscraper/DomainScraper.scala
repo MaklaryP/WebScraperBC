@@ -7,7 +7,7 @@ import dto.Url.Url
 
 trait DomainScraper {
 
-  def parseDocument(doc: Document): (PageContent, Seq[Url])
+  def parseDocument(doc: Document): PageContent
 
   def isUrlInDomain(url: Url): Boolean
 
