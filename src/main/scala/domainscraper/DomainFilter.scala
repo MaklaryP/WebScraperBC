@@ -1,6 +1,6 @@
 package domainscraper
 
-import utils.Url.Url
+import dto.Url.Url
 
 
 object DomainFilter {

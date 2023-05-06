@@ -1,8 +1,8 @@
 package domainscraper
 
+import dto.PageContent
 import net.ruippeixotog.scalascraper.model.Document
-import utils.PageContent
-import utils.Url.Url
+import dto.Url.Url
 
 
 trait DomainScraper {

@@ -1,6 +1,6 @@
-package utils
+package dto
 
-import utils.Url.Url
+import Url.Url
 
 import java.time.LocalDateTime
 

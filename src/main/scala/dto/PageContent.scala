@@ -1,7 +1,7 @@
-package utils
+package dto
 
 import utils.CustomTypes._
-import utils.Url.Url
+import Url.Url
 
 case class PageContent(title: Option[String], authors: Seq[String],
                        publishDate: Option[String], lastUpdatedDate: Option[String],

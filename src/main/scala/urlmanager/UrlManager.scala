@@ -1,7 +1,7 @@
 package urlmanager
 
-import utils.Url.Url
-import utils.UrlVisitRecord
+import dto.UrlVisitRecord
+import dto.Url.Url
 
 
 trait UrlManager {

@@ -1,9 +1,10 @@
 package repository
 
-import crawlresult.CrawlResult
+import dto.RepoDTO
+import dto.crawlresult.CrawlResult
 
 trait Repository {
 
-  def saveStep(stepResults: Seq[CrawlResult]): Unit
+  def saveStep(stepResults: Seq[RepoDTO]): Unit
 
 }

@@ -1,11 +1,11 @@
-import crawlresult.{Crawled, Failed}
+import dto.crawlresult.{Crawled, Failed}
 import logger.{ConsolePrintLogger, LogLevel}
 import net.ruippeixotog.scalascraper.browser.JsoupBrowser
 import repository.OneCsvRepo
 import urlmanager.InMemoryUM
 import utils.{CrawlLimit, CrawlerContext, CrawlerRunReport}
 import utils.CustomTypes._
-import utils.Url.Url
+import dto.Url.Url
 
 import java.nio.file.Path
 

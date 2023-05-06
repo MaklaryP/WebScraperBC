@@ -1,8 +1,8 @@
 package urlmanager
 
+import dto.UrlVisitRecord
 import org.scalatest.matchers.should.Matchers._
-import utils.Url.Url
-import utils.UrlVisitRecord
+import dto.Url.Url
 
 import java.time.LocalDateTime
 
@@ -50,7 +50,7 @@ abstract class UrlManagerCommonBehaviourTest extends org.scalatest.funsuite.AnyF
     val now = LocalDateTime.now()
     val um = getUmImpl()
       .upsert(Seq("x", "y", "z"))
-      .markAsCrawled(Seq("x", "z").map(UrlVisitRecord(_, now)))
+      .markAsCrawled(Seq("x", "z").map(dto.UrlVisitRecord(_, now)))
 
     um.getBatch(100) shouldBe Seq("y")
   }
@@ -59,8 +59,8 @@ abstract class UrlManagerCommonBehaviourTest extends org.scalatest.funsuite.AnyF
     val now = LocalDateTime.now()
     val um = getUmImpl()
       .upsert(Seq("a", "b", "c", "d", "e"))
-      .markAsCrawled(Seq("a", "c").map(UrlVisitRecord(_, now)))
-      .markAsCrawled(Seq("e").map(UrlVisitRecord(_, now)))
+      .markAsCrawled(Seq("a", "c").map(dto.UrlVisitRecord(_, now)))
+      .markAsCrawled(Seq("e").map(dto.UrlVisitRecord(_, now)))
 
     um.getBatch(100) should contain theSameElementsAs Seq("b", "d")
   }
@@ -68,7 +68,7 @@ abstract class UrlManagerCommonBehaviourTest extends org.scalatest.funsuite.AnyF
   test("Mark as crawled urls that are not in toCrawl should markThem after upserting"){
     val now = LocalDateTime.now()
     val um = getUmImpl()
-      .markAsCrawled(Seq("x", "z").map(UrlVisitRecord(_, now)))
+      .markAsCrawled(Seq("x", "z").map(dto.UrlVisitRecord(_, now)))
       .upsert(Seq("x", "y", "z"))
 
     um.getBatch(100) shouldBe Seq("y")

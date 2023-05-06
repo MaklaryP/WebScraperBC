@@ -2,11 +2,11 @@ package domainscraper
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.scala.DefaultScalaModule
+import dto.PageContent
 import net.ruippeixotog.scalascraper.dsl.DSL.Extract._
 import net.ruippeixotog.scalascraper.dsl.DSL._
 import net.ruippeixotog.scalascraper.model.Document
-import utils.PageContent
-import utils.Url.Url
+import dto.Url.Url
 import scala.util.Try
 
 object SmeDomain extends DomainScraper {

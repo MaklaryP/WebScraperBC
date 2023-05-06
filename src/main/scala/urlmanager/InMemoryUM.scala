@@ -1,8 +1,8 @@
 package urlmanager
 
+import dto.UrlVisitRecord
 import urlmanager.InMemoryUM.removeDuplicates
-import utils.Url.Url
-import utils.UrlVisitRecord
+import dto.Url.Url
 
 class InMemoryUM private (private val q: Seq[Url], private val crawled: Set[Url]) extends UrlManager {
 

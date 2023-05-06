@@ -1,11 +1,12 @@
-import crawlresult.{CrawlResult, Crawled, Failed}
 import domainscraper.DomainFilter
+import dto.UrlVisitRecord
+import dto.crawlresult.{CrawlResult, Crawled, Failed}
 import logger.{LogContext, LogLevel}
 import net.ruippeixotog.scalascraper.browser.JsoupBrowser
 import repository.Repository
 import urlmanager.UrlManager
-import utils.Url.Url
-import utils.{CrawlLimit, CrawlerContext, CrawlerRunReport, RunStats, UrlVisitRecord}
+import dto.Url.Url
+import utils.{CrawlLimit, CrawlerContext, CrawlerRunReport, RunStats}
 
 import java.time.LocalDateTime
 import scala.annotation.tailrec
@@ -26,14 +27,13 @@ sealed class MyCrawler(crawlerCtx: CrawlerContext) {
   val stepMaxSize = 1000
   val chunkSize = 50 // one worker load
 
-  def crawlStep(toCrawl: Iterable[Url]): Seq[CrawlResult] = {
+  def crawlStep(toCrawl: Iterable[Url]): CrawlResult = {
     val grouped = toCrawl.grouped(chunkSize).toSeq.zipWithIndex
     val futures = grouped.map(i => crawlChunk(i._1, i._2.toString, grouped.size))
-    val futureResult: Future[Seq[CrawlResult]] = Future.sequence(futures).map(_.flatten)
+    val futureResult: Future[Seq[CrawlResult]] = Future.sequence(futures)
 
-    val results: Seq[CrawlResult] = Await.result(futureResult, 5 minutes)
-
-    results
+    //todo try lowering limit
+    Await.result(futureResult, 5 minutes).reduce(_ ++ _)
   }
 
   @tailrec
@@ -46,14 +46,21 @@ sealed class MyCrawler(crawlerCtx: CrawlerContext) {
     else {
       val newLogCtx = crawlerCtx.logger.logWithContext(s"Crawl in step: ${crawlInThisStep.size} , Remaining: ${qu.sizeToCrawl - crawlInThisStep.size}", logCtx, LogLevel.INFO)
 
-      val stepResult: Seq[CrawlResult] = crawlStep(crawlInThisStep)
-      val urlsFound: Iterable[Url] = CrawlResult.getLinksOnPage(stepResult)
-      val newStats = CrawlResult.aggregateStats(stepResult, runStats)
+      val stepResult: CrawlResult = crawlStep(crawlInThisStep)
+      val urlsFound: Iterable[Url] = stepResult.crawled.map(_.linksOnPage).reduce(_ ++ _)
 
+      val newStats = runStats ++ RunStats(stepResult.crawled.size, stepResult.failed.size)
 
       val newQu = qu.upsert(urlsFound.toSeq)
 
-      repo.saveStep(stepResult)
+
+
+      repo.saveStep(
+        stepResult.crawled.map(mappers.mappers.crawledToRepoDTO) ++
+          stepResult.failed.map(mappers.mappers.failedToRepoDTO)
+        )
+
+      //todo mark as crawled
 
       doStep(newQu, repo, newLogCtx, numOfSteps + 1, crawlLimit, newStats)
     }
@@ -64,11 +71,9 @@ sealed class MyCrawler(crawlerCtx: CrawlerContext) {
   }
 
 
-  private def crawlChunk(toCrawl: Iterable[Url], chunkId: String, numOfChunks: Int, dryRun: Boolean = false): Future[Iterable[CrawlResult]] = Future{
-    val allCount = toCrawl.size
-    toCrawl.zipWithIndex.map{case(url, index) =>
-      //      println(s"Chunk[$chunkId/$numOfChunks]: $index out of $allCount --> $url")
-      crawlUrl(url)
+  private def crawlChunk(toCrawl: Iterable[Url], chunkId: String, numOfChunks: Int, dryRun: Boolean = false): Future[CrawlResult] = {
+    Future{
+      toCrawl.map(crawlUrl).reduce(_ ++ _)
     }
   }
 
@@ -81,14 +86,14 @@ sealed class MyCrawler(crawlerCtx: CrawlerContext) {
 
       val parser = DomainFilter.getDomainScraper(url).getOrElse(throw new RuntimeException(s"Unknown domain for url: $url"))
       val (cont, urls) = parser.parseDocument(browser.get(url)) //todo change how we are visiting and geting report of it
-      val visitRecord = UrlVisitRecord(url, LocalDateTime.now())
+      val visitRecord = dto.UrlVisitRecord(url, LocalDateTime.now())
 
       val supportedUrls = urls.filter(DomainFilter.isUrlInSupportedDomains)
 
-      Crawled(visitRecord, supportedUrls, cont)
+      CrawlResult().addCrawled(Crawled(visitRecord, supportedUrls, cont))
     } catch {
       case e: Exception =>
-        Failed(UrlVisitRecord(url, LocalDateTime.now()), e.getMessage)
+        CrawlResult().addFailed(Failed(dto.UrlVisitRecord(url, LocalDateTime.now()), e.getMessage))
     }
   }
 
