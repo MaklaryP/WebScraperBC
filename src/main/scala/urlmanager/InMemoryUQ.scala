@@ -9,6 +9,7 @@ class InMemoryUQ private (private val q: Seq[Url], private val crawled: Set[Url]
   def this() = this(Seq.empty, Set.empty)
 
   override def upsert(toUpsert: Seq[Url]): UrlManager = {
+    //todo remove also dupl with q - first write test that will chatch it
     new InMemoryUQ(q ++ removeCrawled(toUpsert, crawled), crawled)
   }
 
