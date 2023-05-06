@@ -1,19 +1,19 @@
 package urlmanager
 
-import utils.CustomTypes.Url
+import utils.Url.Url
+import utils.UrlVisitRecord
 
-abstract class UrlManager {
 
-  def upsert(toUpsert: Seq[VisitRecord]): UrlManager
+trait UrlManager {
 
-  def upsertUnvisited(toUpsert: Seq[Url]): UrlManager = {
-    upsert(toUpsert.map(VisitRecord(_, None, VisitState.Unvisited)))
-  }
+  def upsert(toUpsert: Seq[Url]): UrlManager
 
-  def toCrawl(limit: Int): Iterable[VisitRecord]
+  def getBatch(batchSize: Int): Seq[Url]
 
-  def toCrawlUrls(limit: Int): Iterable[Url] = toCrawl(limit).map(_.url)
+  def markAsCrawled(crawled: Seq[UrlVisitRecord]): UrlManager
 
-  def size: Long
+  def sizeToCrawl: Long
+
+  def sizeOfCrawled: Long
 
 }

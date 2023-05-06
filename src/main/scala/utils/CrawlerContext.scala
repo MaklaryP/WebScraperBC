@@ -3,7 +3,7 @@ package utils
 import logger.Logger
 import net.ruippeixotog.scalascraper.model.Document
 import urlmanager.UrlManager
-import utils.CustomTypes._
+import utils.Url.Url
 
 //Should encapsulate all side effects
 case class CrawlerContext(getDocument: Url => Document, logger: Logger,

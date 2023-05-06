@@ -1,19 +1,39 @@
 package urlmanager
 
-import utils.CustomTypes.Url
+import urlmanager.InMemoryUQ.removeCrawled
+import utils.Url.Url
+import utils.UrlVisitRecord
 
-class InMemoryUQ(private val q: Map[Url, VisitRecord]) extends UrlManager {
+class InMemoryUQ private (private val q: Seq[Url], private val crawled: Set[Url]) extends UrlManager {
 
-  def this() = this(Map.empty)
+  def this() = this(Seq.empty, Set.empty)
 
-  override def upsert(toUpsert: Seq[VisitRecord]): UrlManager = {
-    new InMemoryUQ(q ++ toUpsert.map(r => r.url -> r))
+  override def upsert(toUpsert: Seq[Url]): UrlManager = {
+    new InMemoryUQ(q ++ removeCrawled(toUpsert, crawled), crawled)
   }
 
-  override def toCrawl(limit: Int): Iterable[VisitRecord] = {
-    q.filter(r => r._2.state == VisitState.Unvisited).take(limit).values
+  override def getBatch(batchSize: Int): Seq[Url] = {
+    q.take(batchSize)
   }
 
-  override def size: Long = q.size
+  override def markAsCrawled(toMark: Seq[UrlVisitRecord]): UrlManager = {
+    val newCrawled = crawled ++ toMark.map(_.url).toSet
+    new InMemoryUQ(removeCrawled(q, newCrawled), newCrawled)
+  }
+
+  override def sizeToCrawl: Long = q.size
+
+  override def sizeOfCrawled: Long = crawled.size
+}
+
+object InMemoryUQ{
+
+  private type Q = Seq[Url]
+  private type Crawled = Set[Url]
+
+  private def removeCrawled(q: Q, crawled: Crawled): Q = {
+    val n = q.toSet -- crawled
+    n.toSeq
+  }
 
 }

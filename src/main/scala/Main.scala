@@ -1,9 +1,10 @@
+import crawlresult.{Crawled, Failed}
 import logger.{ConsolePrintLogger, LogLevel}
 import net.ruippeixotog.scalascraper.browser.JsoupBrowser
 import urlmanager.InMemoryUQ
 import utils.CrawlerContext
 import utils.CustomTypes._
-import utils.Result._
+import utils.Url.Url
 
 
 object Main extends App{

@@ -5,9 +5,8 @@ import com.fasterxml.jackson.module.scala.DefaultScalaModule
 import net.ruippeixotog.scalascraper.dsl.DSL.Extract._
 import net.ruippeixotog.scalascraper.dsl.DSL._
 import net.ruippeixotog.scalascraper.model.Document
-import utils.CustomTypes.Url
 import utils.PageContent
-
+import utils.Url.Url
 import scala.util.Try
 
 object SmeDomain extends DomainScraper {
