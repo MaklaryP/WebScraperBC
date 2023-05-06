@@ -5,7 +5,7 @@ import net.ruippeixotog.scalascraper.browser.JsoupBrowser
 import repository.Repository
 import urlmanager.UrlManager
 import utils.Url.Url
-import utils.{CrawlerContext, UrlVisitRecord}
+import utils.{CrawlLimit, CrawlerContext, CrawlerRunReport, UrlVisitRecord}
 
 import java.time.LocalDateTime
 import scala.annotation.tailrec
@@ -37,12 +37,13 @@ sealed class MyCrawler(crawlerCtx: CrawlerContext) {
   }
 
   @tailrec
-  final def crawlRec(qu: UrlManager, repo: Repository, maxSteps: Int, logCtx: LogContext, results: Seq[CrawlResult]): Seq[CrawlResult] = {
+  final def doStep(qu: UrlManager, repo: Repository, logCtx: LogContext, numOfSteps: BigInt, crawlLimit: CrawlLimit.CrawlLimit): CrawlerRunReport = {
     val crawlInThisStep = qu.getBatch(stepMaxSize)
 //    println(s"Crawl in step: ${crawlInThisStep.size} , Remaining: ${restOfToCrawl.size}")
     val newLogCtx = crawlerCtx.logger.logWithContext(s"Crawl in step: ${crawlInThisStep.size} , Remaining: ${qu.sizeToCrawl - crawlInThisStep.size}", logCtx, LogLevel.INFO)
 
-    if (maxSteps == 0 || crawlInThisStep.isEmpty) results
+    if(crawlInThisStep.isEmpty) CrawlerRunReport(numOfSteps, "All URLs crawled.")
+    else if(crawlLimit.shouldStopCrawling(numOfSteps)) CrawlerRunReport(numOfSteps, "Crawl stopped due to limit")
     else {
 
       val stepResult: Seq[CrawlResult] = crawlStep(crawlInThisStep)
@@ -52,12 +53,12 @@ sealed class MyCrawler(crawlerCtx: CrawlerContext) {
 
       repo.saveStep(stepResult)
 
-      crawlRec(newQu, repo, maxSteps - 1, newLogCtx, results ++ stepResult)
+      doStep(newQu, repo, newLogCtx, numOfSteps + 1, crawlLimit)
     }
   }
 
-  def crawlMainJob(seedUrls: Seq[Url], maxSteps: Int = 2): Seq[CrawlResult] = {
-    crawlRec(crawlerCtx.urlQueue.upsert(seedUrls), crawlerCtx.repo, maxSteps, LogContext(), Seq.empty)
+  def crawlMainJob(seedUrls: Seq[Url], crawlLimit: CrawlLimit.CrawlLimit): CrawlerRunReport = {
+    doStep(crawlerCtx.urlQueue.upsert(seedUrls), crawlerCtx.repo, LogContext(), 1, crawlLimit)
   }
 
 
