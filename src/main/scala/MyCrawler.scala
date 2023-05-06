@@ -42,7 +42,7 @@ sealed class MyCrawler(crawlerCtx: CrawlerContext) {
 //    println(s"Crawl in step: ${crawlInThisStep.size} , Remaining: ${restOfToCrawl.size}")
 
     if(crawlInThisStep.isEmpty) CrawlerRunReport(runStats, numOfSteps, "All URLs crawled.")
-    else if(crawlLimit.shouldStopCrawling(numOfSteps)) CrawlerRunReport(runStats, numOfSteps, "Crawl stopped due to limit")
+    else if(crawlLimit.shouldStopCrawling(numOfSteps)) CrawlerRunReport(runStats, numOfSteps, s"Crawl stopped due to limit: ${crawlLimit.getClass}")
     else {
       val newLogCtx = crawlerCtx.logger.logWithContext(s"Crawl in step: ${crawlInThisStep.size} , Remaining: ${qu.sizeToCrawl - crawlInThisStep.size}", logCtx, LogLevel.INFO)
 

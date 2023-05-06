@@ -1,5 +1,5 @@
 import dto.crawlresult.{Crawled, Failed}
-import logger.{ConsolePrintLogger, LogLevel}
+import logger.{ConsolePrintLogger, FileLogger, LogLevel}
 import net.ruippeixotog.scalascraper.browser.JsoupBrowser
 import repository.OneCsvRepo
 import urlmanager.InMemoryUM
@@ -7,6 +7,7 @@ import utils.{CrawlLimit, CrawlerContext, CrawlerRunReport}
 import utils.CustomTypes._
 import dto.Url.Url
 
+import scala.concurrent.duration._
 import java.nio.file.Path
 
 
@@ -17,9 +18,12 @@ object Main extends App{
   //    val pathStr = "C:\\Users\\peter.maklary\\Documents\\PARA-Work\\Projects\\WebScraperBC\\data\\fileDb.csv"
   val pathStr = "C:\\Users\\peter\\Documents\\AAAA-PARA-PPC\\Projects\\Bakalarka\\data\\fileDb.csv"
 
+  val logPath = "C:\\Users\\peter\\Documents\\AAAA-PARA-PPC\\Projects\\Bakalarka\\data\\logs.txt"
+
   val crawlerCtx = CrawlerContext(
     (url: Url) => browser.get(url),
-    new ConsolePrintLogger(LogLevel.DEBUG),
+//    new ConsolePrintLogger(LogLevel.DEBUG),
+    new FileLogger(LogLevel.DEBUG, Path.of(logPath)),
     new InMemoryUM(),
     new OneCsvRepo(Path.of(pathStr))
   )
@@ -30,9 +34,11 @@ object Main extends App{
       ,"xxxxx"
       ,"yyyyy"
     ),
-    CrawlLimit.StepLimitedCrawl(2)
+//    CrawlLimit.StepLimitedCrawl(2)
 //    CrawlLimit.InfiniteCrawl()
+    CrawlLimit.TimeLimitedCrawl(8.seconds.fromNow)
   )
 
   println(rep)
+  crawlerCtx.logger.log(rep.toString, LogLevel.DEBUG)
 }

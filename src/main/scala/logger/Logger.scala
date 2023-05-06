@@ -27,6 +27,15 @@ abstract class Logger(lvlThreshold: LogLevel){
     else LogContext()
   }
 
-  def logWithContextAfterLvlCheck(msg: String, context: LogContext, level: LogLevel): LogContext
+  def logWithContextAfterLvlCheck(msg: String, context: LogContext, level: LogLevel): LogContext = {
+    val newCtx = LogContext()
+    val timeDelta = newCtx.timeDelta(context)
+    val enrichedMsg = s"$msg | Time delta from last timed log: ${timeDelta.toSeconds} | Now: ${newCtx.timeStamp.toString}"
+    logAfterLvlCheck(enrichedMsg, level)
+    newCtx
+  }
+
+
+
 
 }
