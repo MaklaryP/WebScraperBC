@@ -27,9 +27,11 @@ object Main extends App{
   val rep: CrawlerRunReport  = crawler.crawlMainJob(
     Seq(
       "https://index.sme.sk/c/23152259/koniec-banictva-na-hornej-nitre-maju-vyriesit-eurofondy-dotacie-vsak-remisova-stale-nespustila.html"
+      ,"xxxxx"
+      ,"yyyyy"
     ),
-//    CrawlLimit.StepLimitedCrawl(2)
-    CrawlLimit.InfiniteCrawl()
+    CrawlLimit.StepLimitedCrawl(2)
+//    CrawlLimit.InfiniteCrawl()
   )
 
   println(rep)

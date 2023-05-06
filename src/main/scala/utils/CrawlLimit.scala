@@ -11,7 +11,7 @@ object CrawlLimit{
   case class StepLimitedCrawl(maxSteps: BigInt) extends CrawlLimit {
     def stepLimitedCrawl(maxSteps: Int): StepLimitedCrawl = StepLimitedCrawl(BigInt(maxSteps))
 
-    override def shouldStopCrawling(numOfSteps: BigInt): Boolean = numOfSteps >= maxSteps
+    override def shouldStopCrawling(numOfSteps: BigInt): Boolean = numOfSteps > maxSteps
   }
 
   case class InfiniteCrawl() extends CrawlLimit {

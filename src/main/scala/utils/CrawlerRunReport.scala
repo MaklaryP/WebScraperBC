@@ -1,3 +1,3 @@
 package utils
 
-case class CrawlerRunReport(numberOfStepsCrawled: BigInt, returnStatus: String)
+case class CrawlerRunReport(runStats: RunStats, numberOfStepsCrawled: BigInt, returnStatus: String)
