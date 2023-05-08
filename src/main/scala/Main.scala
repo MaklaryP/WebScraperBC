@@ -1,3 +1,4 @@
+import crawler.MyCrawler
 import dto.crawlresult.{Crawled, Failed}
 import logger.{CLogger, ConsolePrintLogger, FileLogger, LogContext, LogLevel}
 import net.ruippeixotog.scalascraper.browser.JsoupBrowser
@@ -24,7 +25,7 @@ object Main extends App{
 
   CLogger.setLogger(new FileLogger(LogLevel.DEBUG, Path.of(logPath)))
   val crawlerCtx = CrawlerContext(
-    (url: Url) => browser.get(url),
+    MyCrawler.crawlUrl(MyCrawler.visitUrl(browser)),
 //    new ConsolePrintLogger(LogLevel.DEBUG),
     new InMemoryUM(),
     new FolderCsvRepo(Path.of(pathStr)),

@@ -1,11 +1,11 @@
+package crawler
+
 import domainscraper.DomainFilter
-import dto.UrlVisitRecord
-import dto.crawlresult.{CrawlResult, Crawled, Failed}
-import logger.{CLogger, LogContext, LogLevel}
-import net.ruippeixotog.scalascraper.browser.JsoupBrowser
-import repository.Repository
-import urlmanager.UrlManager
 import dto.Url.Url
+import dto.crawlresult.{CrawlResult, Crawled, Failed}
+import logger.{CLogger, LogLevel}
+import net.ruippeixotog.scalascraper.browser.Browser
+import net.ruippeixotog.scalascraper.model.Document
 import utils.{CrawlLimit, CrawlerContext, CrawlerRunReport, RunStats}
 
 import java.time.LocalDateTime
@@ -16,7 +16,7 @@ import scala.language.postfixOps
 
 
 
-sealed class MyCrawler {
+class MyCrawler {
 
   implicit val ec: ExecutionContextExecutor = ExecutionContext.global
   /*
@@ -27,12 +27,11 @@ sealed class MyCrawler {
   val stepMaxSize = 1000
   val chunkSize = 50 // one worker load
 
-  def crawlStep(toCrawl: Iterable[Url]): CrawlResult = {
-    val grouped = toCrawl.grouped(chunkSize).toSeq.zipWithIndex
-    val futures = grouped.map(i => crawlChunk(i._1, i._2.toString, grouped.size))
+  def crawlStep(crawlUrlFun: Url => CrawlResult)(toCrawl: Iterable[Url]): CrawlResult = {
+    val grouped = toCrawl.grouped(chunkSize).toSeq.zipWithIndex.map(p => (p._1, p._2 + 1)) //we want chunkId to start from 1
+    val futures = grouped.map(i => crawlChunk(crawlUrlFun)(i._1, i._2.toString, grouped.size))
     val futureResult: Future[Seq[CrawlResult]] = Future.sequence(futures)
 
-    //todo try lowering limit
     Await.result(futureResult, 5 minutes).reduce(_ ++ _)
   }
 
@@ -40,7 +39,7 @@ sealed class MyCrawler {
     val crawlInThisStep = ctx.urlQueue.getBatch(stepMaxSize)
     val newLogCtx = CLogger.getLogger.logWithContext(s"Crawl in step: ${crawlInThisStep.size} , Remaining: ${ctx.urlQueue.sizeToCrawl - crawlInThisStep.size}", ctx.logCtx, LogLevel.INFO)
 
-    val stepResult: CrawlResult = crawlStep(crawlInThisStep)
+    val stepResult: CrawlResult = crawlStep(ctx.crawlUrlFun)(crawlInThisStep)
     val urlsFound: Iterable[Url] = stepResult.crawled.map(_.linksOnPage).reduce(_ ++ _)
 
 //    val newStats = runStats ++ RunStats(stepResult.crawled.size, stepResult.failed.size)
@@ -67,7 +66,7 @@ sealed class MyCrawler {
 
     if(runStats.nothingNewCrawled(stepRunStats)) CrawlerRunReport(runStats, numOfSteps, "All URLs crawled.")
     else if(crawlLimit.shouldStopCrawling(numOfSteps)) CrawlerRunReport(runStats, numOfSteps, s"Crawl stopped due to limit: ${crawlLimit.getClass}")
-    else stepController(ctx, numOfSteps + 1, crawlLimit, runStats ++ stepRunStats)
+    else stepController(newCtx, numOfSteps + 1, crawlLimit, runStats ++ stepRunStats)
   }
 
   def crawlMainJob(ctx: CrawlerContext, seedUrls: Seq[Url], crawlLimit: CrawlLimit.CrawlLimit): CrawlerRunReport = {
@@ -76,21 +75,31 @@ sealed class MyCrawler {
   }
 
 
-  private def crawlChunk(toCrawl: Iterable[Url], chunkId: String, numOfChunks: Int, dryRun: Boolean = false): Future[CrawlResult] = {
+  private def crawlChunk(crawlUrlFun: Url => CrawlResult)(toCrawl: Iterable[Url], chunkId: String, numOfChunks: Int): Future[CrawlResult] = {
+    CLogger.getLogger.log(s"Crawling chunk [${chunkId}/${numOfChunks}]", LogLevel.DEBUG)
     Future{
-      toCrawl.map(crawlUrl).reduce(_ ++ _)
+      toCrawl.map(crawlUrlFun).reduce(_ ++ _)
     }
   }
 
-  private def crawlUrl(url: Url): CrawlResult = {
+
+
+
+}
+
+object MyCrawler{
+
+  def visitUrl(browser: Browser)(url: Url): Document = {
+    browser.get(url)
+  }
+
+  def crawlUrl(visitUrlFun: Url => Document)(url: Url): CrawlResult = {
     try {
       //todo filter links to point only to articles
-
-      val browser = JsoupBrowser()
       //todo add browser and other singletons to crawlerContext
 
       val parser = DomainFilter.getDomainScraper(url).getOrElse(throw new RuntimeException(s"Unknown domain for url: $url"))
-      val cont = parser.parseDocument(browser.get(url)) //todo change how we are visiting and geting report of it
+      val cont = parser.parseDocument(visitUrlFun(url)) //todo change how we are visiting and geting report of it
       val urls = cont.childArticles
       val visitRecord = dto.UrlVisitRecord(url, LocalDateTime.now())
 
