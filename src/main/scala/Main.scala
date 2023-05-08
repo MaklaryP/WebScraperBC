@@ -1,5 +1,5 @@
 import dto.crawlresult.{Crawled, Failed}
-import logger.{ConsolePrintLogger, FileLogger, LogLevel}
+import logger.{CLogger, ConsolePrintLogger, FileLogger, LogLevel}
 import net.ruippeixotog.scalascraper.browser.JsoupBrowser
 import repository.OneCsvRepo
 import urlmanager.InMemoryUM
@@ -20,13 +20,15 @@ object Main extends App{
 
   val logPath = "C:\\Users\\peter\\Documents\\AAAA-PARA-PPC\\Projects\\Bakalarka\\data\\logs.txt"
 
+
+  CLogger.setLogger(new FileLogger(LogLevel.DEBUG, Path.of(logPath)))
   val crawlerCtx = CrawlerContext(
     (url: Url) => browser.get(url),
 //    new ConsolePrintLogger(LogLevel.DEBUG),
-    new FileLogger(LogLevel.DEBUG, Path.of(logPath)),
     new InMemoryUM(),
     new OneCsvRepo(Path.of(pathStr))
   )
+
   val crawler =  new MyCrawler(crawlerCtx)
   val rep: CrawlerRunReport  = crawler.crawlMainJob(
     Seq(
@@ -40,5 +42,5 @@ object Main extends App{
   )
 
   println(rep)
-  crawlerCtx.logger.log(rep.toString, LogLevel.DEBUG)
+  CLogger.getLogger.log(rep.toString, LogLevel.DEBUG)
 }

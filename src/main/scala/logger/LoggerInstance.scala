@@ -2,7 +2,7 @@ package logger
 
 import LogLevel._
 
-abstract class Logger(lvlThreshold: LogLevel){
+abstract class LoggerInstance(lvlThreshold: LogLevel){
   protected val defaultLogLvl: LogLevel.ERROR.type = LogLevel.ERROR
 
   private def shouldLog(logLvl: LogLevel, threshold: LogLevel): Boolean = {

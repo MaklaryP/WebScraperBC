@@ -1,7 +1,7 @@
 import domainscraper.DomainFilter
 import dto.UrlVisitRecord
 import dto.crawlresult.{CrawlResult, Crawled, Failed}
-import logger.{LogContext, LogLevel}
+import logger.{CLogger, LogContext, LogLevel}
 import net.ruippeixotog.scalascraper.browser.JsoupBrowser
 import repository.Repository
 import urlmanager.UrlManager
@@ -44,7 +44,7 @@ sealed class MyCrawler(crawlerCtx: CrawlerContext) {
     if(crawlInThisStep.isEmpty) CrawlerRunReport(runStats, numOfSteps, "All URLs crawled.")
     else if(crawlLimit.shouldStopCrawling(numOfSteps)) CrawlerRunReport(runStats, numOfSteps, s"Crawl stopped due to limit: ${crawlLimit.getClass}")
     else {
-      val newLogCtx = crawlerCtx.logger.logWithContext(s"Crawl in step: ${crawlInThisStep.size} , Remaining: ${qu.sizeToCrawl - crawlInThisStep.size}", logCtx, LogLevel.INFO)
+      val newLogCtx = CLogger.getLogger.logWithContext(s"Crawl in step: ${crawlInThisStep.size} , Remaining: ${qu.sizeToCrawl - crawlInThisStep.size}", logCtx, LogLevel.INFO)
 
       val stepResult: CrawlResult = crawlStep(crawlInThisStep)
       val urlsFound: Iterable[Url] = stepResult.crawled.map(_.linksOnPage).reduce(_ ++ _)
