@@ -33,16 +33,16 @@ class MyCrawler(stepMaxSize: Int = 1000, chunkSize: Int = 50) {
   }
 
   def doStep(ctx: CrawlerContext): (CrawlerContext, RunStats) = {
-    val crawlInThisStep = ctx.urlQueue.getBatch(stepMaxSize)
-    val newLogCtx = CLogger.getLogger.logWithContext(s"Crawl in step: ${crawlInThisStep.size} , Remaining: ${ctx.urlQueue.sizeToCrawl - crawlInThisStep.size}", ctx.logCtx, LogLevel.INFO)
+    val crawlInThisStep = ctx.urlManager.getBatch(stepMaxSize)
+    val newLogCtx = CLogger.getLogger.logWithContext(s"Crawl in step: ${crawlInThisStep.size} , Remaining: ${ctx.urlManager.sizeToCrawl - crawlInThisStep.size}", ctx.logCtx, LogLevel.INFO)
 
     val stepResult: CrawlResult = crawlStep(ctx.crawlUrlFun)(crawlInThisStep)
-    val urlsFound: Iterable[Url] = stepResult.crawled.map(_.linksOnPage).reduceOption(_ ++ _).getOrElse(Iterable.empty)
+    val urlsFound: Iterable[Url] = stepResult.crawled.map(_.supportedUrlsOnPage).reduceOption(_ ++ _).getOrElse(Iterable.empty)
 
 //    val newStats = runStats ++ RunStats(stepResult.crawled.size, stepResult.failed.size)
     val runStats = RunStats(stepResult.crawled.size, stepResult.failed.size)
 
-    ctx.urlQueue.upsert(urlsFound.toSeq)
+    ctx.urlManager.upsert(urlsFound.toSeq)
 
 
     ctx.repo.saveStep(
@@ -51,7 +51,7 @@ class MyCrawler(stepMaxSize: Int = 1000, chunkSize: Int = 50) {
     )
 
 
-    ctx.urlQueue.markAsCrawled(crawlInThisStep.map(UrlVisitRecord(_)))
+    ctx.urlManager.markAsCrawled(crawlInThisStep.map(UrlVisitRecord(_)))
 
     (ctx.copy(logCtx = newLogCtx), runStats)
   }
@@ -68,7 +68,7 @@ class MyCrawler(stepMaxSize: Int = 1000, chunkSize: Int = 50) {
   }
 
   def crawlMainJob(ctx: CrawlerContext, seedUrls: Seq[Url], crawlLimit: CrawlLimit.CrawlLimit): CrawlerRunReport = {
-    ctx.urlQueue.upsert(seedUrls)
+    ctx.urlManager.upsert(seedUrls)
     val ctxWithSeeds = ctx
     stepController(ctxWithSeeds, 1, crawlLimit, RunStats(0, 0))
   }
@@ -97,8 +97,8 @@ object MyCrawler{
       //todo filter links to point only to articles
       //todo add browser and other singletons to crawlerContext
 
-      val parser = DomainFilter.getDomainScraper(url).getOrElse(throw new RuntimeException(s"Unknown domain for url: $url"))
-      val cont = parser.parseDocument(visitUrlFun(url)) //todo change how we are visiting and geting report of it
+      val parser = DomainFilter.getDomainScraper(url).getOrElse(throw new RuntimeException(s"Not supported domain - url: $url"))
+      val cont = parser.parseDocument(visitUrlFun(url))
       val urls = cont.childArticles
       val visitRecord = dto.UrlVisitRecord(url, LocalDateTime.now())
 

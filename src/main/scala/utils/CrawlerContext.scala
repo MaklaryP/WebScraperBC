@@ -9,7 +9,7 @@ import dto.crawlresult.CrawlResult
 
 //Should encapsulate all side effects
 case class CrawlerContext(crawlUrlFun: Url => CrawlResult,
-                          urlQueue: UrlManager,
+                          urlManager: UrlManager,
                           repo: Repository,
                           logCtx: LogContext = LogContext()
                          )

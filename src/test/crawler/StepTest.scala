@@ -11,6 +11,7 @@ import utils.CrawlerContext
 import java.lang
 import java.time.LocalDateTime
 
+//noinspection MatchToPartialFunction
 class StepTest extends org.scalatest.funsuite.AnyFunSuite{
 
 
@@ -62,7 +63,7 @@ class StepTest extends org.scalatest.funsuite.AnyFunSuite{
     val c = new MyCrawler()
     val (newContext, _) = c.doStep(testContext)
 
-    newContext.urlQueue.getBatch(1000) shouldBe Seq()
+    newContext.urlManager.getBatch(1000) shouldBe Seq()
   }
 
   test("Step should mark as visited after saved to repo"){
@@ -77,9 +78,9 @@ class StepTest extends org.scalatest.funsuite.AnyFunSuite{
     )
 
     val c = new MyCrawler()
-    an [lang.RuntimeException] should be thrownBy(c.doStep(testContext))
+    an [lang.RuntimeException] should be thrownBy c.doStep(testContext)
 
-    testContext.urlQueue.getBatch(100) shouldBe Seq("aaaa", "bbbb")
+    testContext.urlManager.getBatch(100) shouldBe Seq("aaaa", "bbbb")
 
   }
 
