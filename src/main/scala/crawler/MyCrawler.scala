@@ -54,7 +54,7 @@ class MyCrawler(stepMaxSize: Int = 1000, chunkSize: Int = 50) {
 
     te("Marking as crawled"){ctx.urlManager.markAsCrawled(crawlInThisStep.map(UrlVisitRecord(_)))}
 
-    val newLogCtx = CLogger.getLogger.logWithContext(s"Crawled in step: ${crawlInThisStep.size} , Remaining: ${ctx.urlManager.sizeToCrawl - crawlInThisStep.size}", ctx.logCtx, LogLevel.INFO)
+    val newLogCtx = CLogger.getLogger.logWithContext(s"Crawled in step: ${crawlInThisStep.size} , Remaining: ${ctx.urlManager.sizeToCrawl}", ctx.logCtx, LogLevel.INFO)
     (ctx.copy(logCtx = newLogCtx), runStats)
   }
 
@@ -65,9 +65,7 @@ class MyCrawler(stepMaxSize: Int = 1000, chunkSize: Int = 50) {
     val (newCtx, stepRunStats) = doStep(ctx)
 
     if(stepRunStats.doneNothing()) CrawlerRunReport(runStats, numOfSteps, "All URLs crawled.")
-    else if(crawlLimit.shouldStopCrawling(numOfSteps))
-      throw new RuntimeException("XXXXXXXXXXXXXXXXXXX")
-//      CrawlerRunReport(runStats, numOfSteps, s"Crawl stopped due to limit: ${crawlLimit.getClass}")
+    else if(crawlLimit.shouldStopCrawling(numOfSteps)) CrawlerRunReport(runStats, numOfSteps, s"Crawl stopped due to limit: ${crawlLimit.getClass}")
     else stepController(newCtx, numOfSteps + 1, crawlLimit, runStats ++ stepRunStats)
   }
 

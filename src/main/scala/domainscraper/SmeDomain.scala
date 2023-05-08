@@ -56,8 +56,35 @@ object SmeDomain extends DomainScraper {
     cont.copy(childArticles = urls)
   }
 
+  private val subDomains = Set(
+    "https://index.sme.sk",
+    "https://kultura.sme.sk",
+    "https://primar.sme.sk",
+    "https://korzar.sme.sk",
+    "https://kosice.korzar.sme.sk",
+
+
+//    "https://svet.sme.sk",
+//    "https://zena.sme.sk",
+//    "https://tech.sme.sk",
+//    "https://auto.sme.sk",
+//    "https://komentare.sme.sk",
+//    "https://presov.sme.sk",
+//    "https://mybystrica.sme.sk",
+//    "https://myzvolen.sme.sk",
+//    "https://myzilina.sme.sk",
+//    "https://mytrencin.sme.sk",
+//    "https://mynitra.sme.sk",
+//    "https://bratislava.sme.sk",
+//    "https://bratislava.sme.sk",
+
+  )
+
   override def isUrlInDomain(url: Url): Boolean = {
-    url.startsWith("https://index.sme.sk")
-//    true
+    val domain = "sme.sk"
+    val i = url.indexOf(domain)
+    val prefix = url.substring(0, i + domain.length)
+
+    subDomains.contains(prefix)
   }
 }

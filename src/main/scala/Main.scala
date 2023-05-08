@@ -35,8 +35,8 @@ object Main extends App{
     crawlerCtx,
     Seq(
       "https://index.sme.sk/c/23152259/koniec-banictva-na-hornej-nitre-maju-vyriesit-eurofondy-dotacie-vsak-remisova-stale-nespustila.html"
-      ,"xxxxx"
-      ,"yyyyy"
+      ,"https://kultura.sme.sk/c/23164849/attila-mokos-ak-ma-niekto-chce-tak-si-ma-najde-som-staromodny-a-neviem-sa-predat.html"
+      ,"https://korzar.sme.sk/c/23165953/v-parizi-ich-referendum-odmietlo-co-s-nimi-bude-na-vychode-slovenska.html"
     ),
 //    CrawlLimit.StepLimitedCrawl(2)
 //    CrawlLimit.InfiniteCrawl()
