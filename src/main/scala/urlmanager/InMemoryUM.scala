@@ -4,7 +4,7 @@ import dto.UrlVisitRecord
 import urlmanager.InMemoryUM.removeDuplicates
 import dto.Url.Url
 
-class InMemoryUM private (private var queue: Seq[Url], private var crawled: Set[Url]) extends UrlManager {
+class InMemoryUM private (private var queue: Seq[Url], private var crawled: Set[Url]) extends UrlManager with Serializable{
 
   def this() = this(Seq.empty, Set.empty)
 

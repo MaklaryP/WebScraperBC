@@ -24,7 +24,7 @@ abstract class LoggerInstance(lvlThreshold: LogLevel){
 
 
   def logGetCtx(msg: String, logLvl: LogLevel = defaultLogLvl): LogContext = {
-    log(msg)
+    log(msg, logLvl)
     LogContext()
   }
 
