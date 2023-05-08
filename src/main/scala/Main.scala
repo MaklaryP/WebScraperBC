@@ -43,5 +43,5 @@ object Main extends App{
   )
 
   println(rep)
-  CLogger.getLogger.log(rep.toString, LogLevel.DEBUG)
+  CLogger.getLogger.log(rep.toString, LogLevel.INFO)
 }
