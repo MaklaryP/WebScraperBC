@@ -45,7 +45,7 @@ class MyCrawler {
 //    val newStats = runStats ++ RunStats(stepResult.crawled.size, stepResult.failed.size)
     val runStats = RunStats(stepResult.crawled.size, stepResult.failed.size)
 
-    val newQu = ctx.urlQueue.upsert(urlsFound.toSeq)
+    ctx.urlQueue.upsert(urlsFound.toSeq)
 
 
     ctx.repo.saveStep(
@@ -55,7 +55,7 @@ class MyCrawler {
 
     //todo mark as crawled
 
-    (ctx.copy(urlQueue = newQu).copy(logCtx = newLogCtx), runStats)
+    (ctx.copy(logCtx = newLogCtx), runStats)
   }
 
   @tailrec
@@ -70,7 +70,8 @@ class MyCrawler {
   }
 
   def crawlMainJob(ctx: CrawlerContext, seedUrls: Seq[Url], crawlLimit: CrawlLimit.CrawlLimit): CrawlerRunReport = {
-    val ctxWithSeeds = ctx.copy(urlQueue = ctx.urlQueue.upsert(seedUrls))
+    ctx.urlQueue.upsert(seedUrls)
+    val ctxWithSeeds = ctx
     stepController(ctxWithSeeds, 1, crawlLimit, RunStats(0, 0))
   }
 

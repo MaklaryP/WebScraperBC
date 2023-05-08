@@ -27,21 +27,24 @@ abstract class UrlManagerCommonBehaviourTest extends org.scalatest.funsuite.AnyF
 
 
   test("Attempting to upsert same URLs should upsert only one"){
-    val um = getUmImpl().upsert(Seq("x", "x"))
+    val um = getUmImpl()
+    um.upsert(Seq("x", "x"))
 
     um.sizeToCrawl shouldBe 1
     um.getBatch(100) shouldBe Seq("x")
   }
 
   test("Consecutive exhaustive batch should get same elements") {
-    val um = getUmImpl().upsert(Seq("x", "y", "z"))
-    val um2 = um.getBatch(100)
+    val um = getUmImpl()
+    um.upsert(Seq("x", "y", "z"))
+    val batch1 = um.getBatch(100)
 
-    um.getBatch(100) should contain theSameElementsAs  um2
+    um.getBatch(100) should contain theSameElementsAs  batch1
   }
 
   test("Getting batch should get number of elements as batchSize") {
-    val um = getUmImpl().upsert(Seq("x", "y", "z"))
+    val um = getUmImpl()
+    um.upsert(Seq("x", "y", "z"))
 
     um.getBatch(2) should have size 2
   }
@@ -49,8 +52,8 @@ abstract class UrlManagerCommonBehaviourTest extends org.scalatest.funsuite.AnyF
   test("Should not batch urls marked as crawled") {
     val now = LocalDateTime.now()
     val um = getUmImpl()
-      .upsert(Seq("x", "y", "z"))
-      .markAsCrawled(Seq("x", "z").map(dto.UrlVisitRecord(_, now)))
+    um.upsert(Seq("x", "y", "z"))
+    um.markAsCrawled(Seq("x", "z").map(dto.UrlVisitRecord(_, now)))
 
     um.getBatch(100) shouldBe Seq("y")
   }
@@ -58,9 +61,9 @@ abstract class UrlManagerCommonBehaviourTest extends org.scalatest.funsuite.AnyF
   test("Consecutive marking should mark urls in both sets to mark") {
     val now = LocalDateTime.now()
     val um = getUmImpl()
-      .upsert(Seq("a", "b", "c", "d", "e"))
-      .markAsCrawled(Seq("a", "c").map(dto.UrlVisitRecord(_, now)))
-      .markAsCrawled(Seq("e").map(dto.UrlVisitRecord(_, now)))
+    um.upsert(Seq("a", "b", "c", "d", "e"))
+    um.markAsCrawled(Seq("a", "c").map(dto.UrlVisitRecord(_, now)))
+    um.markAsCrawled(Seq("e").map(dto.UrlVisitRecord(_, now)))
 
     um.getBatch(100) should contain theSameElementsAs Seq("b", "d")
   }
@@ -68,8 +71,8 @@ abstract class UrlManagerCommonBehaviourTest extends org.scalatest.funsuite.AnyF
   test("Mark as crawled urls that are not in toCrawl should markThem after upserting"){
     val now = LocalDateTime.now()
     val um = getUmImpl()
-      .markAsCrawled(Seq("x", "z").map(dto.UrlVisitRecord(_, now)))
-      .upsert(Seq("x", "y", "z"))
+    um.markAsCrawled(Seq("x", "z").map(dto.UrlVisitRecord(_, now)))
+    um.upsert(Seq("x", "y", "z"))
 
     um.getBatch(100) shouldBe Seq("y")
   }

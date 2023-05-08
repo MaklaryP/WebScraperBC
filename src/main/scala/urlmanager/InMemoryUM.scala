@@ -4,24 +4,28 @@ import dto.UrlVisitRecord
 import urlmanager.InMemoryUM.removeDuplicates
 import dto.Url.Url
 
-class InMemoryUM private (private val q: Seq[Url], private val crawled: Set[Url]) extends UrlManager {
+class InMemoryUM private (private var queue: Seq[Url], private var crawled: Set[Url]) extends UrlManager {
 
   def this() = this(Seq.empty, Set.empty)
 
-  override def upsert(toUpsert: Seq[Url]): UrlManager = {
-    new InMemoryUM(q ++ removeDuplicates(toUpsert, crawled), crawled)
+  override def upsert(toUpsert: Seq[Url]): Unit = {
+    val n = queue ++ removeDuplicates(toUpsert, crawled)
+    queue = n
   }
 
   override def getBatch(batchSize: Int): Seq[Url] = {
-    q.take(batchSize)
+    queue.take(batchSize)
   }
 
-  override def markAsCrawled(toMark: Seq[UrlVisitRecord]): UrlManager = {
+  override def markAsCrawled(toMark: Seq[UrlVisitRecord]): Unit = {
     val newCrawled = crawled ++ toMark.map(_.url).toSet
-    new InMemoryUM(removeDuplicates(q, newCrawled), newCrawled)
+    val newQueue = removeDuplicates(queue, newCrawled)
+
+    crawled = newCrawled
+    queue = newQueue
   }
 
-  override def sizeToCrawl: Long = q.size
+  override def sizeToCrawl: Long = queue.size
 
   override def sizeOfCrawled: Long = crawled.size
 }

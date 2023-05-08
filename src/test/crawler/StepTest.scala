@@ -45,7 +45,7 @@ class StepTest extends org.scalatest.funsuite.AnyFunSuite{
     val c = new MyCrawler()
     c.doStep(testContext)
 
-    val expected: Seq[RepoDTO] = Seq(crawled1.copy(pageContent = crawled1.pageContent.copy(title = Some("xxxxxxx"))), crawled2).map(mappers.mappers.crawledToRepoDTO)
+    val expected: Seq[RepoDTO] = Seq(crawled1, crawled2).map(mappers.mappers.crawledToRepoDTO)
 
     repo.getAllSaved() should contain theSameElementsAs expected
   }

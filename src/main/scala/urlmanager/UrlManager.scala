@@ -8,11 +8,11 @@ trait UrlManager {
   //Immutable for implementations used for testing
 
 
-  def upsert(toUpsert: Seq[Url]): UrlManager
+  def upsert(toUpsert: Seq[Url]): Unit
 
   def getBatch(batchSize: Int): Seq[Url]
 
-  def markAsCrawled(crawled: Seq[UrlVisitRecord]): UrlManager
+  def markAsCrawled(crawled: Seq[UrlVisitRecord]): Unit
 
   def sizeToCrawl: Long
 
