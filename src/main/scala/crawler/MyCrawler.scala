@@ -32,7 +32,7 @@ class MyCrawler {
     val futures = grouped.map(i => crawlChunk(crawlUrlFun)(i._1, i._2.toString, grouped.size))
     val futureResult: Future[Seq[CrawlResult]] = Future.sequence(futures)
 
-    Await.result(futureResult, 5 minutes).reduce(_ ++ _)
+    Await.result(futureResult, 5 minutes).reduceOption(_ ++ _).getOrElse(CrawlResult())
   }
 
   def doStep(ctx: CrawlerContext): (CrawlerContext, RunStats) = {
@@ -40,7 +40,7 @@ class MyCrawler {
     val newLogCtx = CLogger.getLogger.logWithContext(s"Crawl in step: ${crawlInThisStep.size} , Remaining: ${ctx.urlQueue.sizeToCrawl - crawlInThisStep.size}", ctx.logCtx, LogLevel.INFO)
 
     val stepResult: CrawlResult = crawlStep(ctx.crawlUrlFun)(crawlInThisStep)
-    val urlsFound: Iterable[Url] = stepResult.crawled.map(_.linksOnPage).reduce(_ ++ _)
+    val urlsFound: Iterable[Url] = stepResult.crawled.map(_.linksOnPage).reduceOption(_ ++ _).getOrElse(Iterable.empty)
 
 //    val newStats = runStats ++ RunStats(stepResult.crawled.size, stepResult.failed.size)
     val runStats = RunStats(stepResult.crawled.size, stepResult.failed.size)
@@ -78,7 +78,7 @@ class MyCrawler {
   private def crawlChunk(crawlUrlFun: Url => CrawlResult)(toCrawl: Iterable[Url], chunkId: String, numOfChunks: Int): Future[CrawlResult] = {
     CLogger.getLogger.log(s"Crawling chunk [${chunkId}/${numOfChunks}]", LogLevel.DEBUG)
     Future{
-      toCrawl.map(crawlUrlFun).reduce(_ ++ _)
+      toCrawl.map(crawlUrlFun).reduceOption(_ ++ _).getOrElse(CrawlResult())
     }
   }
 
