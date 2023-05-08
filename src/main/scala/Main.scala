@@ -1,7 +1,7 @@
 import dto.crawlresult.{Crawled, Failed}
 import logger.{CLogger, ConsolePrintLogger, FileLogger, LogLevel}
 import net.ruippeixotog.scalascraper.browser.JsoupBrowser
-import repository.OneCsvRepo
+import repository.{FolderCsvRepo, OneCsvRepo}
 import urlmanager.InMemoryUM
 import utils.{CrawlLimit, CrawlerContext, CrawlerRunReport}
 import utils.CustomTypes._
@@ -16,7 +16,8 @@ object Main extends App{
   val browser = JsoupBrowser()
 
   //    val pathStr = "C:\\Users\\peter.maklary\\Documents\\PARA-Work\\Projects\\WebScraperBC\\data\\fileDb.csv"
-  val pathStr = "C:\\Users\\peter\\Documents\\AAAA-PARA-PPC\\Projects\\Bakalarka\\data\\fileDb.csv"
+//  val pathStr = "C:\\Users\\peter\\Documents\\AAAA-PARA-PPC\\Projects\\Bakalarka\\data\\fileDb.csv"
+  val pathStr = "C:\\Users\\peter\\Documents\\AAAA-PARA-PPC\\Projects\\Bakalarka\\data\\repoFolder"
 
   val logPath = "C:\\Users\\peter\\Documents\\AAAA-PARA-PPC\\Projects\\Bakalarka\\data\\logs.txt"
 
@@ -26,7 +27,7 @@ object Main extends App{
     (url: Url) => browser.get(url),
 //    new ConsolePrintLogger(LogLevel.DEBUG),
     new InMemoryUM(),
-    new OneCsvRepo(Path.of(pathStr))
+    new FolderCsvRepo(Path.of(pathStr))
   )
 
   val crawler =  new MyCrawler(crawlerCtx)
