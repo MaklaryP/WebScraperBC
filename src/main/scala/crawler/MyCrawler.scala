@@ -33,26 +33,27 @@ class MyCrawler(stepMaxSize: Int = 1000, chunkSize: Int = 50) {
   }
 
   def doStep(ctx: CrawlerContext): (CrawlerContext, RunStats) = {
-    val crawlInThisStep = ctx.urlManager.getBatch(stepMaxSize)
-    val newLogCtx = CLogger.getLogger.logWithContext(s"Crawl in step: ${crawlInThisStep.size} , Remaining: ${ctx.urlManager.sizeToCrawl - crawlInThisStep.size}", ctx.logCtx, LogLevel.INFO)
+    import CLogger.{timeExpression => te}
 
-    val stepResult: CrawlResult = crawlStep(ctx.crawlUrlFun)(crawlInThisStep)
+    val crawlInThisStep = te("Getting Batch"){ctx.urlManager.getBatch(stepMaxSize)}
+
+    val stepResult: CrawlResult = te("Crawling Urls"){crawlStep(ctx.crawlUrlFun)(crawlInThisStep)}
     val urlsFound: Iterable[Url] = stepResult.crawled.map(_.supportedUrlsOnPage).reduceOption(_ ++ _).getOrElse(Iterable.empty)
 
 //    val newStats = runStats ++ RunStats(stepResult.crawled.size, stepResult.failed.size)
     val runStats = RunStats(stepResult.crawled.size, stepResult.failed.size)
 
-    ctx.urlManager.upsert(urlsFound.toSeq)
+    te("Upserting"){ctx.urlManager.upsert(urlsFound.toSeq)}
 
-
-    ctx.repo.saveStep(
+    te("Saving to Repo"){ctx.repo.saveStep(
       stepResult.crawled.map(mappers.mappers.crawledToRepoDTO) ++
         stepResult.failed.map(mappers.mappers.failedToRepoDTO)
-    )
+    )}
 
 
-    ctx.urlManager.markAsCrawled(crawlInThisStep.map(UrlVisitRecord(_)))
+    te("Marking as crawled"){ctx.urlManager.markAsCrawled(crawlInThisStep.map(UrlVisitRecord(_)))}
 
+    val newLogCtx = CLogger.getLogger.logWithContext(s"Crawled in step: ${crawlInThisStep.size} , Remaining: ${ctx.urlManager.sizeToCrawl - crawlInThisStep.size}", ctx.logCtx, LogLevel.INFO)
     (ctx.copy(logCtx = newLogCtx), runStats)
   }
 

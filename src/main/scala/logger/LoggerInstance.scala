@@ -2,12 +2,14 @@ package logger
 
 import LogLevel._
 
+import java.time.Duration
+
 abstract class LoggerInstance(lvlThreshold: LogLevel){
   protected val defaultLogLvl: LogLevel = LogLevel.DEBUG
 
   protected def logAfterLvlCheck(msg: String, logLvl: LogLevel): Unit
 
-  private def logAfterLvlCheckWrapMsg(msg: String, logLevel: LogLevel) = {
+  private def logAfterLvlCheckWrapMsg(msg: String, logLevel: LogLevel): Unit = {
     logAfterLvlCheck(logLevel.toString + ": " +  msg, logLevel)
   }
 
@@ -26,15 +28,17 @@ abstract class LoggerInstance(lvlThreshold: LogLevel){
     LogContext()
   }
 
-  def logWithContext(msg: String, ctx: LogContext, logLvl: LogLevel = defaultLogLvl): LogContext = {
-    if(shouldLog(logLvl, lvlThreshold)) logWithContextAfterLvlCheck(msg, ctx, logLvl)
+  def logWithContext(msg: String, ctx: LogContext, logLvl: LogLevel = defaultLogLvl,
+                     timingSetting: (String, Duration => Long) = TimingSettings.secondsSetting): LogContext = {
+    if(shouldLog(logLvl, lvlThreshold)) logWithContextAfterLvlCheck(msg, ctx, logLvl, timingSetting)
     else LogContext()
   }
 
-  def logWithContextAfterLvlCheck(msg: String, context: LogContext, level: LogLevel): LogContext = {
+  private def logWithContextAfterLvlCheck(msg: String, context: LogContext, level: LogLevel,
+                                          timingSetting: (String, Duration => Long)): LogContext = {
     val newCtx = LogContext()
     val timeDelta = newCtx.timeDelta(context)
-    val enrichedMsg = s"$msg | Time delta from last timed log: ${timeDelta.toSeconds} | Now: ${newCtx.timeStamp.toString}"
+    val enrichedMsg = s"$msg | Time delta from last timed log (${timingSetting._1}): ${timingSetting._2(timeDelta)} | Now: ${newCtx.timeStamp.toString}"
     logAfterLvlCheckWrapMsg(enrichedMsg, level)
     newCtx
   }
@@ -43,3 +47,5 @@ abstract class LoggerInstance(lvlThreshold: LogLevel){
 
 
 }
+
+
