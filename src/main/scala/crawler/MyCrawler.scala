@@ -2,6 +2,7 @@ package crawler
 
 import domainscraper.DomainFilter
 import dto.Url.Url
+import dto.UrlVisitRecord
 import dto.crawlresult.{CrawlResult, Crawled, Failed}
 import logger.{CLogger, LogLevel}
 import net.ruippeixotog.scalascraper.browser.Browser
@@ -16,16 +17,12 @@ import scala.language.postfixOps
 
 
 
-class MyCrawler {
+class MyCrawler(stepMaxSize: Int = 1000, chunkSize: Int = 50) {
 
   implicit val ec: ExecutionContextExecutor = ExecutionContext.global
   /*
   Worker gets bunch of URLs
    */
-
-  // Step - each step is running crawl in chunks asynchronously, saving result in main thread
-  val stepMaxSize = 1000
-  val chunkSize = 50 // one worker load
 
   def crawlStep(crawlUrlFun: Url => CrawlResult)(toCrawl: Iterable[Url]): CrawlResult = {
     val grouped = toCrawl.grouped(chunkSize).toSeq.zipWithIndex.map(p => (p._1, p._2 + 1)) //we want chunkId to start from 1
@@ -53,7 +50,8 @@ class MyCrawler {
         stepResult.failed.map(mappers.mappers.failedToRepoDTO)
     )
 
-    //todo mark as crawled
+
+    ctx.urlQueue.markAsCrawled(crawlInThisStep.map(UrlVisitRecord(_)))
 
     (ctx.copy(logCtx = newLogCtx), runStats)
   }
@@ -64,7 +62,7 @@ class MyCrawler {
 
     val (newCtx, stepRunStats) = doStep(ctx)
 
-    if(runStats.nothingNewCrawled(stepRunStats)) CrawlerRunReport(runStats, numOfSteps, "All URLs crawled.")
+    if(stepRunStats.doneNothing()) CrawlerRunReport(runStats, numOfSteps, "All URLs crawled.")
     else if(crawlLimit.shouldStopCrawling(numOfSteps)) CrawlerRunReport(runStats, numOfSteps, s"Crawl stopped due to limit: ${crawlLimit.getClass}")
     else stepController(newCtx, numOfSteps + 1, crawlLimit, runStats ++ stepRunStats)
   }
@@ -77,7 +75,7 @@ class MyCrawler {
 
 
   private def crawlChunk(crawlUrlFun: Url => CrawlResult)(toCrawl: Iterable[Url], chunkId: String, numOfChunks: Int): Future[CrawlResult] = {
-    CLogger.getLogger.log(s"Crawling chunk [${chunkId}/${numOfChunks}]", LogLevel.DEBUG)
+    CLogger.getLogger.log(s"Crawling chunk [$chunkId/$numOfChunks]", LogLevel.DEBUG)
     Future{
       toCrawl.map(crawlUrlFun).reduceOption(_ ++ _).getOrElse(CrawlResult())
     }
