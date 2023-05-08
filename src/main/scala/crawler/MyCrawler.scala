@@ -36,6 +36,7 @@ class MyCrawler(stepMaxSize: Int = 1000, chunkSize: Int = 50) {
     import CLogger.{timeExpression => te}
 
     val crawlInThisStep = te("Getting Batch"){ctx.urlManager.getBatch(stepMaxSize)}
+    CLogger.getLogger.log(s"Going to Crawl: ${crawlInThisStep.size} urls.", LogLevel.INFO)
 
     val stepResult: CrawlResult = te("Crawling Urls"){crawlStep(ctx.crawlUrlFun)(crawlInThisStep)}
     val urlsFound: Iterable[Url] = stepResult.crawled.map(_.supportedUrlsOnPage).reduceOption(_ ++ _).getOrElse(Iterable.empty)
@@ -64,7 +65,9 @@ class MyCrawler(stepMaxSize: Int = 1000, chunkSize: Int = 50) {
     val (newCtx, stepRunStats) = doStep(ctx)
 
     if(stepRunStats.doneNothing()) CrawlerRunReport(runStats, numOfSteps, "All URLs crawled.")
-    else if(crawlLimit.shouldStopCrawling(numOfSteps)) CrawlerRunReport(runStats, numOfSteps, s"Crawl stopped due to limit: ${crawlLimit.getClass}")
+    else if(crawlLimit.shouldStopCrawling(numOfSteps))
+      throw new RuntimeException("XXXXXXXXXXXXXXXXXXX")
+//      CrawlerRunReport(runStats, numOfSteps, s"Crawl stopped due to limit: ${crawlLimit.getClass}")
     else stepController(newCtx, numOfSteps + 1, crawlLimit, runStats ++ stepRunStats)
   }
 

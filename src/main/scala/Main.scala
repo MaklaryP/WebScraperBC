@@ -18,13 +18,17 @@ object Main extends App{
 
   val paths = PathsSetting.getPaths
 
-  CLogger.setLogger(new FileLogger(LogLevel.DEBUG, paths.logPath))
+  CLogger.setLogger(new FileLogger(LogLevel.INFO, paths.logPath))
+  val um = new PersistedInMemoryUM(paths.umSer)
+//  um.loadFromFile()
+
   val crawlerCtx = CrawlerContext(
     MyCrawler.crawlUrl(MyCrawler.visitUrl(browser)),
-    new PersistedInMemoryUM(paths.umSer),
+    um,
     new FolderCsvRepo(paths.repoFolderPath),
     LogContext()
   )
+
 
   val crawler =  new MyCrawler()
   val rep: CrawlerRunReport  = crawler.crawlMainJob(
@@ -36,7 +40,7 @@ object Main extends App{
     ),
 //    CrawlLimit.StepLimitedCrawl(2)
 //    CrawlLimit.InfiniteCrawl()
-    CrawlLimit.TimeLimitedCrawl(8.seconds.fromNow)
+    CrawlLimit.TimeLimitedCrawl(20.seconds.fromNow)
   )
 
   println(rep)

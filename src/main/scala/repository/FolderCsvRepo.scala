@@ -15,7 +15,7 @@ class FolderCsvRepo(folderPath: Path) extends Repository {
     val fileName = LocalDateTime.now().toString.replaceAll("""\D""", "_") + ".csv"
     val path: Path = folderPath.resolve(fileName)
 
-    RepoCommons.saveDtosToCsv(stepResults, path, Some(RepoCommons.getCsvHeader()))
+    RepoCommons.saveDtosToCsv(stepResults, path, Some(RepoSchema.csvHeader))
   }
 
 

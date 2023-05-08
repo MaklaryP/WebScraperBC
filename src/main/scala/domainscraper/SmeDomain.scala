@@ -34,12 +34,19 @@ object SmeDomain extends DomainScraper {
         .map(_("name").asInstanceOf[String])
     }.toOption
 
+    val introOpt = (doc >?> text("""p.perex"""))
+      .orElse(doc >?> text("""div.mb-m.sans-reg.fs-14.lh-xl.mt-m.mt-xxs-mo p"""))
+    val articleOpt = doc >?> texts("""article p""")
+
+
     val publishDate = getStringField(parsedMap, "datePublished")
     val dateModified = getStringField(parsedMap, "datePublished")
 
 
     val cont = PageContent.getEmpty.copy(
-      title.flatten, authors.getOrElse(Seq.empty), publishDate, dateModified
+      title.flatten, authors.getOrElse(Seq.empty), publishDate = publishDate, lastUpdatedDate = dateModified,
+      articleText = articleOpt.map(_.mkString(",")),
+      introSection = introOpt
     )
 
     val urlsOpts = doc >?> elementList("""a[href^="https"]""") >?> attr("href")("a")
