@@ -8,4 +8,9 @@ case class RunStats(numOfCrawled: BigInt, numOfFailed: BigInt){
       numOfFailed + o.numOfFailed
     )
   }
+
+  def nothingNewCrawled(newRunStat: RunStats): Boolean = {
+    this == newRunStat
+  }
+
 }

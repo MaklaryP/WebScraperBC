@@ -5,6 +5,8 @@ import dto.Url.Url
 
 
 trait UrlManager {
+  //Immutable for implementations used for testing
+
 
   def upsert(toUpsert: Seq[Url]): UrlManager
 

@@ -16,7 +16,7 @@ import scala.language.postfixOps
 
 
 
-sealed class MyCrawler(crawlerCtx: CrawlerContext) {
+sealed class MyCrawler {
 
   implicit val ec: ExecutionContextExecutor = ExecutionContext.global
   /*
@@ -36,38 +36,43 @@ sealed class MyCrawler(crawlerCtx: CrawlerContext) {
     Await.result(futureResult, 5 minutes).reduce(_ ++ _)
   }
 
-  @tailrec
-  final def doStep(qu: UrlManager, repo: Repository, logCtx: LogContext, numOfSteps: BigInt, crawlLimit: CrawlLimit.CrawlLimit, runStats: RunStats): CrawlerRunReport = {
-    val crawlInThisStep = qu.getBatch(stepMaxSize)
-//    println(s"Crawl in step: ${crawlInThisStep.size} , Remaining: ${restOfToCrawl.size}")
+  def doStep(ctx: CrawlerContext): (CrawlerContext, RunStats) = {
+    val crawlInThisStep = ctx.urlQueue.getBatch(stepMaxSize)
+    val newLogCtx = CLogger.getLogger.logWithContext(s"Crawl in step: ${crawlInThisStep.size} , Remaining: ${ctx.urlQueue.sizeToCrawl - crawlInThisStep.size}", ctx.logCtx, LogLevel.INFO)
 
-    if(crawlInThisStep.isEmpty) CrawlerRunReport(runStats, numOfSteps, "All URLs crawled.")
-    else if(crawlLimit.shouldStopCrawling(numOfSteps)) CrawlerRunReport(runStats, numOfSteps, s"Crawl stopped due to limit: ${crawlLimit.getClass}")
-    else {
-      val newLogCtx = CLogger.getLogger.logWithContext(s"Crawl in step: ${crawlInThisStep.size} , Remaining: ${qu.sizeToCrawl - crawlInThisStep.size}", logCtx, LogLevel.INFO)
+    val stepResult: CrawlResult = crawlStep(crawlInThisStep)
+    val urlsFound: Iterable[Url] = stepResult.crawled.map(_.linksOnPage).reduce(_ ++ _)
 
-      val stepResult: CrawlResult = crawlStep(crawlInThisStep)
-      val urlsFound: Iterable[Url] = stepResult.crawled.map(_.linksOnPage).reduce(_ ++ _)
+//    val newStats = runStats ++ RunStats(stepResult.crawled.size, stepResult.failed.size)
+    val runStats = RunStats(stepResult.crawled.size, stepResult.failed.size)
 
-      val newStats = runStats ++ RunStats(stepResult.crawled.size, stepResult.failed.size)
-
-      val newQu = qu.upsert(urlsFound.toSeq)
+    val newQu = ctx.urlQueue.upsert(urlsFound.toSeq)
 
 
+    ctx.repo.saveStep(
+      stepResult.crawled.map(mappers.mappers.crawledToRepoDTO) ++
+        stepResult.failed.map(mappers.mappers.failedToRepoDTO)
+    )
 
-      repo.saveStep(
-        stepResult.crawled.map(mappers.mappers.crawledToRepoDTO) ++
-          stepResult.failed.map(mappers.mappers.failedToRepoDTO)
-        )
+    //todo mark as crawled
 
-      //todo mark as crawled
-
-      doStep(newQu, repo, newLogCtx, numOfSteps + 1, crawlLimit, newStats)
-    }
+    (ctx.copy(urlQueue = newQu).copy(logCtx = newLogCtx), runStats)
   }
 
-  def crawlMainJob(seedUrls: Seq[Url], crawlLimit: CrawlLimit.CrawlLimit): CrawlerRunReport = {
-    doStep(crawlerCtx.urlQueue.upsert(seedUrls), crawlerCtx.repo, LogContext(), 1, crawlLimit, RunStats(0, 0))
+  @tailrec
+  final def stepController(ctx: CrawlerContext, numOfSteps: BigInt, crawlLimit: CrawlLimit.CrawlLimit, runStats: RunStats): CrawlerRunReport = {
+//    println(s"Crawl in step: ${crawlInThisStep.size} , Remaining: ${restOfToCrawl.size}")
+
+    val (newCtx, stepRunStats) = doStep(ctx)
+
+    if(runStats.nothingNewCrawled(stepRunStats)) CrawlerRunReport(runStats, numOfSteps, "All URLs crawled.")
+    else if(crawlLimit.shouldStopCrawling(numOfSteps)) CrawlerRunReport(runStats, numOfSteps, s"Crawl stopped due to limit: ${crawlLimit.getClass}")
+    else stepController(ctx, numOfSteps + 1, crawlLimit, runStats ++ stepRunStats)
+  }
+
+  def crawlMainJob(ctx: CrawlerContext, seedUrls: Seq[Url], crawlLimit: CrawlLimit.CrawlLimit): CrawlerRunReport = {
+    val ctxWithSeeds = ctx.copy(urlQueue = ctx.urlQueue.upsert(seedUrls))
+    stepController(ctxWithSeeds, 1, crawlLimit, RunStats(0, 0))
   }
 
 

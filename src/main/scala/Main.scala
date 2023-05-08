@@ -1,5 +1,5 @@
 import dto.crawlresult.{Crawled, Failed}
-import logger.{CLogger, ConsolePrintLogger, FileLogger, LogLevel}
+import logger.{CLogger, ConsolePrintLogger, FileLogger, LogContext, LogLevel}
 import net.ruippeixotog.scalascraper.browser.JsoupBrowser
 import repository.{FolderCsvRepo, OneCsvRepo}
 import urlmanager.InMemoryUM
@@ -27,11 +27,13 @@ object Main extends App{
     (url: Url) => browser.get(url),
 //    new ConsolePrintLogger(LogLevel.DEBUG),
     new InMemoryUM(),
-    new FolderCsvRepo(Path.of(pathStr))
+    new FolderCsvRepo(Path.of(pathStr)),
+    LogContext()
   )
 
-  val crawler =  new MyCrawler(crawlerCtx)
+  val crawler =  new MyCrawler()
   val rep: CrawlerRunReport  = crawler.crawlMainJob(
+    crawlerCtx,
     Seq(
       "https://index.sme.sk/c/23152259/koniec-banictva-na-hornej-nitre-maju-vyriesit-eurofondy-dotacie-vsak-remisova-stale-nespustila.html"
       ,"xxxxx"
